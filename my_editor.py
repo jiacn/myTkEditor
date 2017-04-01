@@ -1,20 +1,74 @@
 """
-Text Widget Indexing and Tagging explained using
-implementation of:
-    1. select_all
-    2. find_text
+Adding features:
+    File > New
+    File > Open
+    File > Save 
+    File > Save As
 """
-
+import os
 from tkinter import *
+import tkinter.filedialog
 
 
 PROGRAM_NAME = "Footprint Editor"
+file_name = None
 
 root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
 
-# Implementing select_all and find_text functions
+# new_file, open_file, save, save_as implementation
+
+
+def new_file(event=None):
+    root.title("Untitled")
+    global file_name
+    file_name = None
+    content_text.delete(1.0, END)
+
+
+def open_file(event=None):
+    input_file_name = tkinter.filedialog.askopenfilename(defaultextension=".txt",
+                                                         filetypes=[("All Files", "*.*"), ("Text Documents", "*.txt")])
+    if input_file_name:
+        global file_name
+        file_name = input_file_name
+        root.title('{} - {}'.format(os.path.basename(file_name), PROGRAM_NAME))
+        content_text.delete(1.0, END)
+        with open(file_name) as _file:
+            content_text.insert(1.0, _file.read())
+
+
+def write_to_file(file_name):
+    try:
+        content = content_text.get(1.0, 'end')
+        with open(file_name, 'w') as the_file:
+            the_file.write(content)
+    except IOError:
+        pass  # in actual we will show a error message box.
+        # we discuss message boxes in the next section so ignored here.
+
+
+def save_as(event=None):
+    input_file_name = tkinter.filedialog.asksaveasfilename(defaultextension=".txt",
+                                                           filetypes=[("All Files", "*.*"), ("Text Documents", "*.txt")])
+    if input_file_name:
+        global file_name
+        file_name = input_file_name
+        write_to_file(file_name)
+        root.title('{} - {}'.format(os.path.basename(file_name), PROGRAM_NAME))
+    return "break"
+    
+
+def save(event=None):
+    global file_name
+    if not file_name:
+        save_as()
+    else:
+        write_to_file(file_name)
+    return "break"
+
+# End of iteration
 
 
 def select_all(event=None):
@@ -56,7 +110,7 @@ def search_output(needle, if_ignore_case, content_text,
         start_pos = '1.0'
         while True:
             start_pos = content_text.search(needle, start_pos,
-                                                   nocase=if_ignore_case, stopindex=END)
+                                            nocase=if_ignore_case, stopindex=END)
             if not start_pos:
                 break
             end_pos = '{}+{}c'.format(start_pos, len(needle))
@@ -104,13 +158,14 @@ redo_icon = PhotoImage(file='icons/redo.gif')
 
 menu_bar = Menu(root)
 file_menu = Menu(menu_bar, tearoff=0)
-file_menu.add_command(label='New', accelerator='Ctrl+N',
-                      compound='left', image=new_file_icon, underline=0)
-file_menu.add_command(label='Open', accelerator='Ctrl+O',
-                      compound='left', image=open_file_icon, underline=0)
+file_menu.add_command(label='New', accelerator='Ctrl+N', compound='left',
+                      image=new_file_icon, underline=0, command=new_file)
+file_menu.add_command(label='Open', accelerator='Ctrl+O', compound='left',
+                      image=open_file_icon, underline=0, command=open_file)
 file_menu.add_command(label='Save', accelerator='Ctrl+S',
-                      compound='left', image=save_file_icon, underline=0)
-file_menu.add_command(label='Save as', accelerator='Shift+Ctrl+S')
+                      compound='left', image=save_file_icon, underline=0, command=save)
+file_menu.add_command(
+    label='Save as', accelerator='Shift+Ctrl+S', command=save_as)
 file_menu.add_separator()
 file_menu.add_command(label='Exit', accelerator='Alt+F4')
 menu_bar.add_cascade(label='File', menu=file_menu)
@@ -185,6 +240,14 @@ content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
 
+# Shortcut key bindings for this iteration
+content_text.bind('<Control-N>', new_file)
+content_text.bind('<Control-n>', new_file)
+content_text.bind('<Control-O>', open_file)
+content_text.bind('<Control-o>', open_file)
+content_text.bind('<Control-S>', save)
+content_text.bind('<Control-s>', save)
+# Iteration ends
 
 content_text.bind('<Control-f>', find_text)
 content_text.bind('<Control-F>', find_text)
