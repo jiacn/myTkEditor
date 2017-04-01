@@ -1,10 +1,8 @@
 """
-leveraging Text widget built-in options for
-    1. Cut
-    2. Copy
-    3. Paste
-    4. Undo
-    5. Redo
+Text Widget Indexing and Tagging explained using
+implementation of:
+    1. select_all
+    2. find_text
 """
 
 from tkinter import *
@@ -16,7 +14,59 @@ root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
 
-# Adding Text Widget Built-in Functionality
+# Implementing select_all and find_text functions
+
+
+def select_all(event=None):
+    content_text.tag_add('sel', '1.0', 'end')
+    return "break"
+
+
+def find_text(event=None):
+    search_toplevel = Toplevel(root)
+    search_toplevel.title('Find Text')
+    search_toplevel.transient(root)
+    search_toplevel.resizable(False, False)
+    Label(search_toplevel, text="Find All:").grid(row=0, column=0, sticky='e')
+    search_entry_widget = Entry(
+        search_toplevel, width=25)
+    search_entry_widget.grid(row=0, column=1, padx=2, pady=2, sticky='we')
+    search_entry_widget.focus_set()
+    ignore_case_value = IntVar()
+    Checkbutton(search_toplevel, text='Ignore Case', variable=ignore_case_value).grid(
+        row=1, column=1, sticky='e', padx=2, pady=2)
+    Button(search_toplevel, text="Find All", underline=0,
+           command=lambda: search_output(
+               search_entry_widget.get(), ignore_case_value.get(),
+               content_text, search_toplevel, search_entry_widget)
+           ).grid(row=0, column=2, sticky='e' + 'w', padx=2, pady=2)
+
+    def close_search_window():
+        content_text.tag_remove('match', '1.0', END)
+        search_toplevel.destroy()
+    search_toplevel.protocol('WM_DELETE_WINDOW', close_search_window)
+    return "break"
+
+
+def search_output(needle, if_ignore_case, content_text,
+                  search_toplevel, search_box):
+    content_text.tag_remove('match', '1.0', END)
+    matches_found = 0
+    if needle:
+        start_pos = '1.0'
+        while True:
+            start_pos = content_text.search(needle, start_pos,
+                                                   nocase=if_ignore_case, stopindex=END)
+            if not start_pos:
+                break
+            end_pos = '{}+{}c'.format(start_pos, len(needle))
+            content_text.tag_add('match', start_pos, end_pos)
+            matches_found += 1
+            start_pos = end_pos
+        content_text.tag_config(
+            'match', foreground='red', background='yellow')
+    search_box.focus_set()
+    search_toplevel.title('{} matches found'.format(matches_found))
 
 
 def cut():
@@ -42,8 +92,6 @@ def undo():
 def redo(event=None):
     content_text.event_generate("<<Redo>>")
     return 'break'
-
-# end of this iteration
 
 new_file_icon = PhotoImage(file='icons/new_file.gif')
 open_file_icon = PhotoImage(file='icons/open_file.gif')
@@ -80,9 +128,11 @@ edit_menu.add_command(label='Copy', accelerator='Ctrl+C',
 edit_menu.add_command(label='Paste', accelerator='Ctrl+V',
                       compound='left', image=paste_icon, command=paste)
 edit_menu.add_separator()
-edit_menu.add_command(label='Find', underline=0, accelerator='Ctrl+F')
+edit_menu.add_command(label='Find', underline=0,
+                      accelerator='Ctrl+F', command=find_text)
 edit_menu.add_separator()
-edit_menu.add_command(label='Select All', underline=7, accelerator='Ctrl+A')
+edit_menu.add_command(label='Select All', underline=7,
+                      accelerator='Ctrl+A', command=select_all)
 menu_bar.add_cascade(label='Edit', menu=edit_menu)
 
 
@@ -135,7 +185,11 @@ content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
 
-# handling redo quirk
+
+content_text.bind('<Control-f>', find_text)
+content_text.bind('<Control-F>', find_text)
+content_text.bind('<Control-A>', select_all)
+content_text.bind('<Control-a>', select_all)
 content_text.bind('<Control-y>', redo)
 content_text.bind('<Control-Y>', redo)
 
