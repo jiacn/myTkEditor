@@ -1,7 +1,9 @@
 """
-Adding cursor location info at bottom
-Adding Color Theme 
+Features Added:
+	Add context/ Pop-up Menu
+    Set focus on launch
 """
+
 import os
 from tkinter import *
 import tkinter.filedialog
@@ -14,7 +16,11 @@ root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
 
-# show cursor info at bottom
+# show pop-up menu
+
+
+def show_popup_menu(event):
+    popup_menu.tk_popup(event.x_root, event.y_root)
 
 
 def show_cursor_info_bar():
@@ -32,7 +38,6 @@ def update_cursor_info_bar(event=None):
     cursor_info_bar.config(text=infotext)
 
 
-# change themes
 def change_theme(event=None):
     selected_theme = theme_choice.get()
     fg_bg_colors = color_schemes.get(selected_theme)
@@ -59,11 +64,13 @@ def highlight_line(interval=100):
 def undo_highlight():
     content_text.tag_remove("active_line", 1.0, "end")
 
+
 def toggle_highlight(event=None):
     if to_highlight_line.get():
         highlight_line()
     else:
         undo_highlight()
+
 
 def on_content_changed(event=None):
     update_line_numbers()
@@ -79,17 +86,9 @@ def get_line_numbers():
     return output
 
 
-def update_line_numbers(event=None):
-    line_numbers = get_line_numbers()
-    line_number_bar.config(state='normal')
-    line_number_bar.delete('1.0', 'end')
-    line_number_bar.insert('1.0', line_numbers)
-    line_number_bar.config(state='disabled')
-
-
 def display_about_messagebox(event=None):
     tkinter.messagebox.showinfo(
-        "About", PROGRAM_NAME + "\nTkinter GUI Application\n by Jia")
+        "About", "{}{}".format(PROGRAM_NAME, "\nTkinter GUI Application\n by Jia"))
 
 
 def display_help_messagebox(event=None):
@@ -121,7 +120,7 @@ def open_file(event=None):
         content_text.delete(1.0, END)
         with open(file_name) as _file:
             content_text.insert(1.0, _file.read())
-    on_content_changed()
+        on_content_changed()
 
 
 def write_to_file(file_name):
@@ -143,6 +142,7 @@ def save_as(event=None):
         root.title('{} - {}'.format(os.path.basename(file_name), PROGRAM_NAME))
     return "break"
 
+
 def save(event=None):
     global file_name
     if not file_name:
@@ -161,8 +161,9 @@ def find_text(event=None):
     search_toplevel = Toplevel(root)
     search_toplevel.title('Find Text')
     search_toplevel.transient(root)
-    search_toplevel.resizable(False, False)
+
     Label(search_toplevel, text="Find All:").grid(row=0, column=0, sticky='e')
+
     search_entry_widget = Entry(
         search_toplevel, width=25)
     search_entry_widget.grid(row=0, column=1, padx=2, pady=2, sticky='we')
@@ -336,8 +337,6 @@ scroll_bar = Scrollbar(content_text)
 content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
-
-# add cursor info label
 cursor_info_bar = Label(content_text, text='Line: 1 | Column: 1')
 cursor_info_bar.pack(expand='no', fill=None, side='right', anchor='se')
 
@@ -357,6 +356,20 @@ content_text.bind('<Control-y>', redo)
 content_text.bind('<Control-Y>', redo)
 content_text.bind('<Any-KeyPress>', on_content_changed)
 content_text.tag_configure('active_line', background='ivory2')
+
+# set up the pop-up menu
+popup_menu = Menu(content_text)
+for i in ('cut', 'copy', 'paste', 'undo', 'redo'):
+    cmd = eval(i)
+    popup_menu.add_command(label=i, compound='left', command=cmd)
+popup_menu.add_separator()
+popup_menu.add_command(label='Select All', underline=7, command=select_all)
+content_text.bind('<Button-3>', show_popup_menu)
+
+
+# bind right mouse click to show pop up and set focus to text widget on launch
+content_text.bind('<Button-3>', show_popup_menu)
+content_text.focus_set()
 
 root.protocol('WM_DELETE_WINDOW', exit_editor)
 root.mainloop()
