@@ -1,8 +1,9 @@
 """
-Adding:
-    About, Help Message Box
-    'Really Quit ?' Prompt  to exit button 
+Adding Shortcut Icons toolbar
+Displaying Line Numbers
+Highlighting Current Line
 """
+
 import os
 from tkinter import *
 import tkinter.filedialog
@@ -15,7 +16,44 @@ root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
 
-# about, help and exit messagebox
+
+def update_line_numbers(event=None):
+    line_numbers = get_line_numbers()
+    line_number_bar.config(state='normal')
+    line_number_bar.delete('1.0', 'end')
+    line_number_bar.insert('1.0', line_numbers)
+    line_number_bar.config(state='disabled')
+
+
+def highlight_line(interval=100):
+    content_text.tag_remove("active_line", 1.0, "end")
+    content_text.tag_add(
+        "active_line", "insert linestart", "insert lineend+1c")
+    content_text.after(interval, toggle_highlight)
+
+
+def undo_highlight():
+    content_text.tag_remove("active_line", 1.0, "end")
+
+
+def toggle_highlight(event=None):
+    if to_highlight_line.get():
+        highlight_line()
+    else:
+        undo_highlight()
+
+
+def on_content_changed(event=None):
+    update_line_numbers()
+
+
+def get_line_numbers():
+    output = ''
+    if show_line_number.get():
+        row, col = content_text.index("end").split('.')
+        for i in range(1, int(row)):
+            output += str(i) + '\n'
+    return output
 
 
 def display_about_messagebox(event=None):
@@ -33,15 +71,13 @@ def exit_editor(event=None):
     if tkinter.messagebox.askokcancel("Quit?", "Really quit?"):
         root.destroy()
 
-# keyboard shortcut for help added towards the last of this program
-# iteration ends
-
 
 def new_file(event=None):
     root.title("Untitled")
     global file_name
     file_name = None
     content_text.delete(1.0, END)
+    on_content_changed()
 
 
 def open_file(event=None):
@@ -54,6 +90,7 @@ def open_file(event=None):
         content_text.delete(1.0, END)
         with open(file_name) as _file:
             content_text.insert(1.0, _file.read())
+    on_content_changed()
 
 
 def write_to_file(file_name):
@@ -138,6 +175,7 @@ def search_output(needle, if_ignore_case, content_text,
 
 def cut():
     content_text.event_generate("<<Cut>>")
+    on_content_changed()
     return "break"
 
 
@@ -148,16 +186,19 @@ def copy():
 
 def paste():
     content_text.event_generate("<<Paste>>")
+    on_content_changed()
     return "break"
 
 
 def undo():
     content_text.event_generate("<<Undo>>")
+    on_content_changed()
     return "break"
 
 
 def redo(event=None):
     content_text.event_generate("<<Redo>>")
+    on_content_changed()
     return 'break'
 
 new_file_icon = PhotoImage(file='icons/new_file.gif')
@@ -207,14 +248,15 @@ menu_bar.add_cascade(label='Edit', menu=edit_menu)
 view_menu = Menu(menu_bar, tearoff=0)
 show_line_number = IntVar()
 show_line_number.set(1)
-view_menu.add_checkbutton(label='Show Line Number', variable=show_line_number)
+view_menu.add_checkbutton(label='Show Line Number', variable=show_line_number,
+                          command=update_line_numbers)
 show_cursor_info = IntVar()
 show_cursor_info.set(1)
 view_menu.add_checkbutton(
     label='Show Cursor Location at Bottom', variable=show_cursor_info)
-highlight_line = IntVar()
+to_highlight_line = BooleanVar()
 view_menu.add_checkbutton(label='Highlight Current Line', onvalue=1,
-                          offvalue=0, variable=highlight_line)
+                          offvalue=0, variable=to_highlight_line, command=toggle_highlight)
 themes_menu = Menu(menu_bar, tearoff=0)
 view_menu.add_cascade(label='Themes', menu=themes_menu)
 
@@ -240,8 +282,20 @@ about_menu.add_command(label='Help', command=display_help_messagebox)
 menu_bar.add_cascade(label='About',  menu=about_menu)
 root.config(menu=menu_bar)
 
-shortcut_bar = Frame(root,  height=25, background='light sea green')
+shortcut_bar = Frame(root,  height=25)
 shortcut_bar.pack(expand='no', fill='x')
+
+# adding shortcut icons
+icons = ('new_file', 'open_file', 'save', 'cut', 'copy', 'paste',
+         'undo', 'redo', 'find_text')
+for i, icon in enumerate(icons):
+    tool_bar_icon = PhotoImage(file='icons/{}.gif'.format(icon))
+    cmd = eval(icon)
+    tool_bar = Button(shortcut_bar, image=tool_bar_icon, command=cmd)
+    tool_bar.image = tool_bar_icon
+    tool_bar.pack(side='left')
+
+
 line_number_bar = Text(root, width=4, padx=3, takefocus=0,  border=0,
                        background='khaki', state='disabled',  wrap='none')
 line_number_bar.pack(side='left',  fill='y')
@@ -253,11 +307,7 @@ content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
 
-# added keyboard shortcut for help
 content_text.bind('<KeyPress-F1>', display_help_messagebox)
-# ends
-
-
 content_text.bind('<Control-N>', new_file)
 content_text.bind('<Control-n>', new_file)
 content_text.bind('<Control-O>', open_file)
@@ -270,6 +320,11 @@ content_text.bind('<Control-A>', select_all)
 content_text.bind('<Control-a>', select_all)
 content_text.bind('<Control-y>', redo)
 content_text.bind('<Control-Y>', redo)
+
+# added in this iteration
+content_text.bind('<Any-KeyPress>', on_content_changed)
+content_text.tag_configure('active_line', background='ivory2')
+###
 
 root.protocol('WM_DELETE_WINDOW', exit_editor)
 root.mainloop()
