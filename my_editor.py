@@ -1,19 +1,49 @@
 """
-Adding View Menu Items to demonstrate
-other Types of Menu Items
-    1. Checkbutton menu-item
-    2. Radiobutton menu-item
-    3. Cascade menu-item
+leveraging Text widget built-in options for
+    1. Cut
+    2. Copy
+    3. Paste
+    4. Undo
+    5. Redo
 """
 
 from tkinter import *
 
 
-PROGRAM_NAME = "My Editor"
+PROGRAM_NAME = "Footprint Editor"
 
 root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
+
+# Adding Text Widget Built-in Functionality
+
+
+def cut():
+    content_text.event_generate("<<Cut>>")
+    return "break"
+
+
+def copy():
+    content_text.event_generate("<<Copy>>")
+    return "break"
+
+
+def paste():
+    content_text.event_generate("<<Paste>>")
+    return "break"
+
+
+def undo():
+    content_text.event_generate("<<Undo>>")
+    return "break"
+
+
+def redo(event=None):
+    content_text.event_generate("<<Redo>>")
+    return 'break'
+
+# end of this iteration
 
 new_file_icon = PhotoImage(file='icons/new_file.gif')
 open_file_icon = PhotoImage(file='icons/open_file.gif')
@@ -36,27 +66,26 @@ file_menu.add_command(label='Save as', accelerator='Shift+Ctrl+S')
 file_menu.add_separator()
 file_menu.add_command(label='Exit', accelerator='Alt+F4')
 menu_bar.add_cascade(label='File', menu=file_menu)
+
 edit_menu = Menu(menu_bar, tearoff=0)
 edit_menu.add_command(label='Undo', accelerator='Ctrl+Z',
-                      compound='left', image=undo_icon)
+                      compound='left', image=undo_icon, command=undo)
 edit_menu.add_command(label='Redo', accelerator='Ctrl+Y',
-                      compound='left', image=redo_icon)
+                      compound='left', image=redo_icon, command=redo)
 edit_menu.add_separator()
 edit_menu.add_command(label='Cut', accelerator='Ctrl+X',
-                      compound='left', image=cut_icon)
+                      compound='left', image=cut_icon, command=cut)
 edit_menu.add_command(label='Copy', accelerator='Ctrl+C',
-                      compound='left', image=copy_icon)
+                      compound='left', image=copy_icon, command=copy)
 edit_menu.add_command(label='Paste', accelerator='Ctrl+V',
-                      compound='left', image=paste_icon)
+                      compound='left', image=paste_icon, command=paste)
 edit_menu.add_separator()
 edit_menu.add_command(label='Find', underline=0, accelerator='Ctrl+F')
 edit_menu.add_separator()
 edit_menu.add_command(label='Select All', underline=7, accelerator='Ctrl+A')
 menu_bar.add_cascade(label='Edit', menu=edit_menu)
 
-##
-# Implementing Checkbutton, Radiobutton and Cascade menu-items under View Menu in this iteration
-##
+
 view_menu = Menu(menu_bar, tearoff=0)
 show_line_number = IntVar()
 show_line_number.set(1)
@@ -71,10 +100,6 @@ view_menu.add_checkbutton(label='Highlight Current Line', onvalue=1,
 themes_menu = Menu(menu_bar, tearoff=0)
 view_menu.add_cascade(label='Themes', menu=themes_menu)
 
-"""
-color scheme is defined with dictionary elements like -
-        theme_name : foreground_color.background_color
-"""
 color_schemes = {
     'Default': '#000000.#FFFFFF',
     'Greygarious': '#83406A.#D1D4D1',
@@ -91,11 +116,6 @@ for k in sorted(color_schemes):
     themes_menu.add_radiobutton(label=k, variable=theme_choice)
 menu_bar.add_cascade(label='View', menu=view_menu)
 
-
-#
-# End of View menu implementation in this iteration
-#
-
 about_menu = Menu(menu_bar, tearoff=0)
 about_menu.add_command(label='About')
 about_menu.add_command(label='Help')
@@ -108,11 +128,16 @@ line_number_bar = Text(root, width=4, padx=3, takefocus=0,  border=0,
                        background='khaki', state='disabled',  wrap='none')
 line_number_bar.pack(side='left',  fill='y')
 
-content_text = Text(root, wrap='word')
+content_text = Text(root, wrap='word', undo=1)
 content_text.pack(expand='yes', fill='both')
 scroll_bar = Scrollbar(content_text)
 content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
+
+# handling redo quirk
+content_text.bind('<Control-y>', redo)
+content_text.bind('<Control-Y>', redo)
+
 
 root.mainloop()
