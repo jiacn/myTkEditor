@@ -1,14 +1,12 @@
 """
-Adding features:
-    File > New
-    File > Open
-    File > Save 
-    File > Save As
+Adding:
+    About, Help Message Box
+    'Really Quit ?' Prompt  to exit button 
 """
 import os
 from tkinter import *
 import tkinter.filedialog
-
+import tkinter.messagebox
 
 PROGRAM_NAME = "Footprint Editor"
 file_name = None
@@ -17,7 +15,26 @@ root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
 
-# new_file, open_file, save, save_as implementation
+# about, help and exit messagebox
+
+
+def display_about_messagebox(event=None):
+    tkinter.messagebox.showinfo(
+        "About", PROGRAM_NAME + "\nTkinter GUI Application\n by Jia")
+
+
+def display_help_messagebox(event=None):
+    tkinter.messagebox.showinfo(
+        "Help", "Help Book: \nTkinter GUI Application\n by Jia",
+        icon='question')
+
+
+def exit_editor(event=None):
+    if tkinter.messagebox.askokcancel("Quit?", "Really quit?"):
+        root.destroy()
+
+# keyboard shortcut for help added towards the last of this program
+# iteration ends
 
 
 def new_file(event=None):
@@ -45,8 +62,7 @@ def write_to_file(file_name):
         with open(file_name, 'w') as the_file:
             the_file.write(content)
     except IOError:
-        pass  # in actual we will show a error message box.
-        # we discuss message boxes in the next section so ignored here.
+        tkinter.messagebox.showwarning("Save", "Could not save the file.")
 
 
 def save_as(event=None):
@@ -58,7 +74,6 @@ def save_as(event=None):
         write_to_file(file_name)
         root.title('{} - {}'.format(os.path.basename(file_name), PROGRAM_NAME))
     return "break"
-    
 
 def save(event=None):
     global file_name
@@ -67,8 +82,6 @@ def save(event=None):
     else:
         write_to_file(file_name)
     return "break"
-
-# End of iteration
 
 
 def select_all(event=None):
@@ -110,7 +123,7 @@ def search_output(needle, if_ignore_case, content_text,
         start_pos = '1.0'
         while True:
             start_pos = content_text.search(needle, start_pos,
-                                            nocase=if_ignore_case, stopindex=END)
+                                                   nocase=if_ignore_case, stopindex=END)
             if not start_pos:
                 break
             end_pos = '{}+{}c'.format(start_pos, len(needle))
@@ -167,7 +180,7 @@ file_menu.add_command(label='Save', accelerator='Ctrl+S',
 file_menu.add_command(
     label='Save as', accelerator='Shift+Ctrl+S', command=save_as)
 file_menu.add_separator()
-file_menu.add_command(label='Exit', accelerator='Alt+F4')
+file_menu.add_command(label='Exit', accelerator='Alt+F4', command=exit_editor)
 menu_bar.add_cascade(label='File', menu=file_menu)
 
 edit_menu = Menu(menu_bar, tearoff=0)
@@ -222,8 +235,8 @@ for k in sorted(color_schemes):
 menu_bar.add_cascade(label='View', menu=view_menu)
 
 about_menu = Menu(menu_bar, tearoff=0)
-about_menu.add_command(label='About')
-about_menu.add_command(label='Help')
+about_menu.add_command(label='About', command=display_about_messagebox)
+about_menu.add_command(label='Help', command=display_help_messagebox)
 menu_bar.add_cascade(label='About',  menu=about_menu)
 root.config(menu=menu_bar)
 
@@ -240,15 +253,17 @@ content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
 
-# Shortcut key bindings for this iteration
+# added keyboard shortcut for help
+content_text.bind('<KeyPress-F1>', display_help_messagebox)
+# ends
+
+
 content_text.bind('<Control-N>', new_file)
 content_text.bind('<Control-n>', new_file)
 content_text.bind('<Control-O>', open_file)
 content_text.bind('<Control-o>', open_file)
 content_text.bind('<Control-S>', save)
 content_text.bind('<Control-s>', save)
-# Iteration ends
-
 content_text.bind('<Control-f>', find_text)
 content_text.bind('<Control-F>', find_text)
 content_text.bind('<Control-A>', select_all)
@@ -256,5 +271,5 @@ content_text.bind('<Control-a>', select_all)
 content_text.bind('<Control-y>', redo)
 content_text.bind('<Control-Y>', redo)
 
-
+root.protocol('WM_DELETE_WINDOW', exit_editor)
 root.mainloop()
