@@ -1,9 +1,7 @@
 """
-Adding Shortcut Icons toolbar
-Displaying Line Numbers
-Highlighting Current Line
+Adding cursor location info at bottom
+Adding Color Theme 
 """
-
 import os
 from tkinter import *
 import tkinter.filedialog
@@ -15,6 +13,32 @@ file_name = None
 root = Tk()
 root.geometry('350x350')
 root.title(PROGRAM_NAME)
+
+# show cursor info at bottom
+
+
+def show_cursor_info_bar():
+    show_cursor_info_checked = show_cursor_info.get()
+    if show_cursor_info_checked:
+        cursor_info_bar.pack(expand='no', fill=None, side='right', anchor='se')
+    else:
+        cursor_info_bar.pack_forget()
+
+
+def update_cursor_info_bar(event=None):
+    row, col = content_text.index(INSERT).split('.')
+    line_num, col_num = str(int(row)), str(int(col) + 1)  # col starts at 0
+    infotext = "Line: {0} | Column: {1}".format(line_num, col_num)
+    cursor_info_bar.config(text=infotext)
+
+
+# change themes
+def change_theme(event=None):
+    selected_theme = theme_choice.get()
+    fg_bg_colors = color_schemes.get(selected_theme)
+    foreground_color, background_color = fg_bg_colors.split('.')
+    content_text.config(
+        background=background_color, fg=foreground_color)
 
 
 def update_line_numbers(event=None):
@@ -35,16 +59,15 @@ def highlight_line(interval=100):
 def undo_highlight():
     content_text.tag_remove("active_line", 1.0, "end")
 
-
 def toggle_highlight(event=None):
     if to_highlight_line.get():
         highlight_line()
     else:
         undo_highlight()
 
-
 def on_content_changed(event=None):
     update_line_numbers()
+    update_cursor_info_bar()
 
 
 def get_line_numbers():
@@ -54,6 +77,14 @@ def get_line_numbers():
         for i in range(1, int(row)):
             output += str(i) + '\n'
     return output
+
+
+def update_line_numbers(event=None):
+    line_numbers = get_line_numbers()
+    line_number_bar.config(state='normal')
+    line_number_bar.delete('1.0', 'end')
+    line_number_bar.insert('1.0', line_numbers)
+    line_number_bar.config(state='disabled')
 
 
 def display_about_messagebox(event=None):
@@ -160,7 +191,7 @@ def search_output(needle, if_ignore_case, content_text,
         start_pos = '1.0'
         while True:
             start_pos = content_text.search(needle, start_pos,
-                                                   nocase=if_ignore_case, stopindex=END)
+                                            nocase=if_ignore_case, stopindex=END)
             if not start_pos:
                 break
             end_pos = '{}+{}c'.format(start_pos, len(needle))
@@ -253,7 +284,7 @@ view_menu.add_checkbutton(label='Show Line Number', variable=show_line_number,
 show_cursor_info = IntVar()
 show_cursor_info.set(1)
 view_menu.add_checkbutton(
-    label='Show Cursor Location at Bottom', variable=show_cursor_info)
+    label='Show Cursor Location at Bottom', variable=show_cursor_info, command=show_cursor_info_bar)
 to_highlight_line = BooleanVar()
 view_menu.add_checkbutton(label='Highlight Current Line', onvalue=1,
                           offvalue=0, variable=to_highlight_line, command=toggle_highlight)
@@ -273,7 +304,8 @@ color_schemes = {
 theme_choice = StringVar()
 theme_choice.set('Default')
 for k in sorted(color_schemes):
-    themes_menu.add_radiobutton(label=k, variable=theme_choice)
+    themes_menu.add_radiobutton(
+        label=k, variable=theme_choice, command=change_theme)
 menu_bar.add_cascade(label='View', menu=view_menu)
 
 about_menu = Menu(menu_bar, tearoff=0)
@@ -285,7 +317,6 @@ root.config(menu=menu_bar)
 shortcut_bar = Frame(root,  height=25)
 shortcut_bar.pack(expand='no', fill='x')
 
-# adding shortcut icons
 icons = ('new_file', 'open_file', 'save', 'cut', 'copy', 'paste',
          'undo', 'redo', 'find_text')
 for i, icon in enumerate(icons):
@@ -294,7 +325,6 @@ for i, icon in enumerate(icons):
     tool_bar = Button(shortcut_bar, image=tool_bar_icon, command=cmd)
     tool_bar.image = tool_bar_icon
     tool_bar.pack(side='left')
-
 
 line_number_bar = Text(root, width=4, padx=3, takefocus=0,  border=0,
                        background='khaki', state='disabled',  wrap='none')
@@ -306,6 +336,11 @@ scroll_bar = Scrollbar(content_text)
 content_text.configure(yscrollcommand=scroll_bar.set)
 scroll_bar.config(command=content_text.yview)
 scroll_bar.pack(side='right', fill='y')
+
+# add cursor info label
+cursor_info_bar = Label(content_text, text='Line: 1 | Column: 1')
+cursor_info_bar.pack(expand='no', fill=None, side='right', anchor='se')
+
 
 content_text.bind('<KeyPress-F1>', display_help_messagebox)
 content_text.bind('<Control-N>', new_file)
@@ -320,11 +355,8 @@ content_text.bind('<Control-A>', select_all)
 content_text.bind('<Control-a>', select_all)
 content_text.bind('<Control-y>', redo)
 content_text.bind('<Control-Y>', redo)
-
-# added in this iteration
 content_text.bind('<Any-KeyPress>', on_content_changed)
 content_text.tag_configure('active_line', background='ivory2')
-###
 
 root.protocol('WM_DELETE_WINDOW', exit_editor)
 root.mainloop()
